@@ -4,16 +4,19 @@ format short g
 
 %% Problem setup
 
-n = 2;  % Number of customer vertices
-s = 2;  % Number of ACS vertices
-vehicles = 3;   % Number of vehicles
-nf = 2;
+n = 5;  % Number of customer vertices
+s = 0;  % Number of ACS vertices
+vehicles = 2;   % Number of vehicles
+nf = 0;
 meters_per_second = 15;
-T_max = 125;
+T_max = 170;
+Q = 10000;
+r = 1;
 
 % syms v0
 % syms v [1 n+s+(n*s)];
-v = [(1:n+s+nf*s)', randi(1000, n+s+nf*s, 2)];
+% v = [(1:n+s+nf*s)', randi(1000, n+s+nf*s, 2)];
+v = [(1:n+s+nf*s)', [1:n+s+nf*s]', [n+s+nf*s:-1:1]'];
 for i = n+1:size(v,1)-s
     v(s+i,2:end) = v(i,2:end);
 end
@@ -27,11 +30,13 @@ I_0 = union(I, v0, 'rows');
 F = v(n+1:n+s,:);
 F_prime = union(F, v(n+s+1:end,:), 'rows');
 F_0 = union(F_prime, v0, 'rows');
+% F_0(size(F_0,1)+1, :) = [size(F_0,1), 0, 0]; % Add copy of depot
 V = union(I,F, 'rows');
 V = union(v0,V, 'rows');
 V_prime = union(V, v(n+s+1:end,:), 'rows');
-for i = size(V_prime,1)+1:size(V_prime,1)+nf
-    V_prime(i,:) = [i-1, 0, 0]; % Add copies of depot
+for i = 1:nf
+    V_prime(size(V_prime,1)+1, :) = [size(V_prime,1), 0, 0]; % Add copy of depot
+    F_0(end+1, :) = V_prime(end, :);
 end
 E = nchoosek(V_prime(:,1), 2); % Edges between each vertex
 
@@ -76,7 +81,7 @@ x = optimvar(...
 % level upon arrival to vertex j. It is reset to Q at each
 % charging station vertex i and the depot
 y = optimvar(...
-    "y_j", size(V_prime,1),...
+    "y_j", size(V_prime,1) + 1,...
     'Type',"continuous",...
     'LowerBound', 0,...
     "UpperBound",10);
@@ -173,7 +178,17 @@ minprob.Constraints.constraint9_2 = eqn9_2;
 % show(eqn9_1)
 % show(eqn9_2)
 
+% Constraint eq(10)
+eqn10 = optimconstr(size(V_prime, 1) * size(I, 1));
+for i = 1:size(V_prime, 1)
+    for j = 1:size(I, 1)
+        
+    end
+end
+
 % Solve
 [sol, fval] = solve(minprob);
-[E(:,1:2), sol.x]
+%[E(:,1:2), sol.x]
+E(find(sol.x),1:2) % Filters to find 
 sol.tau
+V_prime
